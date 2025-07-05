@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+
+<body>
+    <input />
+    <div>abc</div>
+    <button>확인</button>
+    <script>
+        let I = document.querySelector('input');
+        let D = document.querySelector("div");
+        let B = document.querySelector("button");
+
+        // click을 감지하여 만들어 놓은 함수를 실행 합니다. 
+        B.addEventListener("click", function () {
+            let n = I.value;
+           // D.innerText = function ceilFloor(n){ let c = Math.ceil(n); let f = Math.floor(n); console.log('ceil:',c, 'floor:', f); }// 클릭을 감지해서 사용자가 임의로 input안에 작성한 코드를 *10 해주는 부분
+           let z = ceilFloor(n);
+            D.innerText=z
+
+        });
+
+        function ceilFloor(n){
+             let c = Math.ceil(n); 
+             let f = Math.floor(n);
+              //console.log('ceil:',c, 'floor:', f);
+              return `ceil은${c}froor은${f}입니다`;
+        
+              
+        }
+        
+
+
+    </script>
+
+</body>
+
+</html>
+
+
+<!-- function ceilFloor(n){ let c = Math.ceil(n); let f = Math.floor(n); console.log('ceil:',c, 'floor:', f); } -->
+
+
+<!-- ceilFloor(3.14); -->
