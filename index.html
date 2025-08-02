@@ -1,42 +1,118 @@
 <!DOCTYPE html>
+<html>
+<head>
+    <style>
+        body {
+            font-family: 'Pretendard', sans-serif;
+            /* 배경 이미지 */
+            background-image: url('https://images.unsplash.com/photo-1526401281623-3593f5c9fa9b?auto=format&fit=crop&w=1470&q=80');
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
 
+            /* 배경이 꽉 차도록 */
+            height: 100vh;
+            margin: 0;
+
+            /* 플렉스박스로 가운데 정렬 */
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* 배경 흐림 효과 대신 투명도 조절한 흰 박스 사용 */
+        .info-box {
+            background-color: rgba(255, 255, 255, 0.9);
+            padding: 20px 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+            margin-bottom: 30px;
+            text-align: center;
+            max-width: 400px;
+        }
+
+        .info-box p {
+            margin: 0;
+            font-size: 16px;
+            color: #636e72;
+            line-height: 1.5;
+        }
+
+        input {
+            padding: 10px 15px;
+            font-size: 16px;
+            border: 2px solid #ccc;
+            border-radius: 8px;
+            outline: none;
+            width: 250px;
+            margin-bottom: 10px;
+        }
+
+        button {
+            padding: 10px 20px;
+            font-size: 16px;
+            background-color: #6c5ce7;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        button:hover {
+            background-color: #5a4bcf;
+        }
+
+        .result-box {
+            margin-top: 15px;
+            font-size: 20px;
+            color: #2d3436;
+            font-weight: bold;
+            text-align: center;
+            background-color: rgba(255, 255, 255, 0.8);
+            padding: 10px 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+            width: fit-content;
+        }
+    </style>
+</head>
 <body>
-    <input />
-    <div>abc</div>
+
+    <div class="info-box">
+        <p>숫자를 쉼표( <strong>,</strong> )로 구분해서 입력해 주세요.<br>
+        입력한 숫자들이 자동으로 더해지고,<br> 평균도 함께 계산됩니다 😊</p>
+    </div>
+
+    <input placeholder="예: 10, 20, 30" />
     <button>확인</button>
+
+    <div class="result-box" id="sumResult">총합: </div>
+    <div class="result-box" id="avgResult">평균: </div>
+
     <script>
         let I = document.querySelector('input');
-        let D = document.querySelector("div");
+        let sumDiv = document.getElementById("sumResult");
+        let avgDiv = document.getElementById("avgResult");
         let B = document.querySelector("button");
 
-        // click을 감지하여 만들어 놓은 함수를 실행 합니다. 
         B.addEventListener("click", function () {
             let n = I.value;
-           // D.innerText = function ceilFloor(n){ let c = Math.ceil(n); let f = Math.floor(n); console.log('ceil:',c, 'floor:', f); }// 클릭을 감지해서 사용자가 임의로 input안에 작성한 코드를 *10 해주는 부분
-           let z = ceilFloor(n);
-            D.innerText=z
+            let nn = n.split(',');
+            let numbers = nn.map(x => Number(x.trim())).filter(x => !isNaN(x));
 
+            let sum = 0;
+            for (let i = 0; i < numbers.length; i++) {
+                sum += numbers[i];
+            }
+
+            let avg = numbers.length > 0 ? (sum / numbers.length).toFixed(2) : 0;
+
+            sumDiv.innerText = "총합: " + sum;
+            avgDiv.innerText = "평균: " + avg;
         });
-
-        function ceilFloor(n){
-             let c = Math.ceil(n); 
-             let f = Math.floor(n);
-              //console.log('ceil:',c, 'floor:', f);
-              return `ceil은${c}froor은${f}입니다`;
-        
-              
-        }
-        
-
-
     </script>
 
 </body>
-
 </html>
-
-
-<!-- function ceilFloor(n){ let c = Math.ceil(n); let f = Math.floor(n); console.log('ceil:',c, 'floor:', f); } -->
-
-
-<!-- ceilFloor(3.14); -->
