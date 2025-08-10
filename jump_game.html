@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <title>점프 & 웅크리기 게임 (모바일 지원)</title>
+  <style>
+    body {
+      background: #222;
+      color: white;
+      font-family: sans-serif;
+      text-align: center;
+      margin: 0;
+      padding: 0;
+      user-select: none; /* 터치시 드래그 방지 */
+      -webkit-tap-highlight-color: transparent; /* 모바일 터치 하이라이트 제거 */
+    }
+    canvas {
+      background: #333;
+      border: 2px solid white;
+      margin-top: 10px;
+      touch-action: none; /* 터치 동작 무시 */
+    }
+    #info {
+      margin-top: 10px;
+      font-size: 16px;
+    }
+    #gameOverScreen {
+      position: absolute;
+      top: 30%;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(0,0,0,0.9);
+      padding: 20px;
+      border: 2px solid red;
+      display: none;
+      color: white;
+    }
+    #gameOverScreen button {
+      margin-top: 10px;
+      padding: 8px 16px;
+      background: red;
+      border: none;
+      color: white;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+  <div id="info">
+    회피한 장애물: <span id="score">0</span> |
+    이동 거리: <span id="distance">0</span>px |
+    <strong>최고 기록: <span id="highScore">0</span></strong>
+  </div>
+  <canvas id="game" width="800" height="300"></canvas>
+
+  <div id="gameOverScreen">
+    <div id="gameOverText"></div>
+    <button onclick="resetGame()">재시작</button>
+  </div>
+
+  <script>
+    const canvas = document.getElementById('game');
+    const ctx = canvas.getContext('2d');
+    const scoreEl = document.getElementById('score');
+    const distanceEl = document.getElementById('distance');
+    const highScoreEl = document.getElementById('highScore');
+    const gameOverScreen = document.getElementById('gameOverScreen');
+    const gameOverText = document.getElementById('gameOverText');
+
+    const grid = 30;
+    const floorY = canvas.height - grid;
+
+    const player = {
+      x: 50,
+      y: floorY - grid * 2,
+      width: grid * 2,
+      height: grid * 2,
+      dy: 0,
+      gravity: 1,
+      jumpPower: -13,
+      maxJumpHeight: -20,
+      jumpCount: 0,
+      isJumping: false,
+      isCrouch: false,
+    };
+
+    let frame = 0;
+    let obstacles = [];
+    let score = 0;
+    let distance = 0;
+    let highScore = 0;
+    let gameOverFlag = false;
+    let animationFrame;
+
+    class Obstacle {
+      constructor(x, type) {
+        this.x = x;
+        this.speed = 6;
+        this.type = type;
+        this.passed = false;
+
+        if (type === 'low') {
+          this.width = grid;
+          this.height = grid;
+          this.y = floorY - grid;
+        } else if (type === 'high') {
+          this.width = grid;
+          this.height = grid * 2;
+          this.y = floorY - grid * 2;
+        } else if (type === 'crouch') {
+          this.width = grid;
+          this.height = grid * 3;
+          this.y = floorY - grid * 3;
+        }
+      }
+
+      update() {
+        this.x -= this.speed;
+      }
+
+      draw() {
+        ctx.fillStyle = 'red';
+        if (this.type === 'crouch') {
+          ctx.fillRect(this.x, this.y, this.width, this.height - grid); // 윗부분만 그림
+        } else {
+          ctx.fillRect(this.x, this.y, this.width, this.height);
+        }
+      }
+    }
+
+    function createObstacle() {
+      const r = Math.random();
+      let type = 'low';
+      if (r < 0.4) type = 'low';
+      else if (r < 0.8) type = 'high';
+      else type = 'crouch';
+
+      obstacles.push(new Obstacle(canvas.width, type));
+    }
+
+    function jump() {
+      if (player.jumpCount < 2) {
+        player.dy = player.jumpPower;
+        player.jumpCount++;
+        player.isJumping = true;
+
+        if (player.isCrouch) {
+          player.isCrouch = false;
+          player.height = grid * 2;
+          player.y = floorY - player.height;
+        }
+      }
+    }
+
+    function crouch(down) {
+      if (down && !player.isCrouch && !player.isJumping) {
+        player.isCrouch = true;
+        player.height = grid;
+        player.y = floorY - player.height;
+      } else if (!down && player.isCrouch) {
+        player.isCrouch = false;
+        player.height = grid * 2;
+        player.y = floorY - player.height;
+      }
+    }
+
+    function checkCollision(p, o) {
+      return p.x < o.x + o.width &&
+             p.x + p.width > o.x &&
+             p.y < o.y + o.height &&
+             p.y + p.height > o.y;
+    }
+
+    function handleCollision(obstacle) {
+      if (obstacle.type === 'crouch') {
+        if (!player.isCrouch && checkCollision(player, obstacle)) return true;
+      } else {
+        if (checkCollision(player, obstacle)) return true;
+      }
+      return false;
+    }
+
+    function gameOver() {
+      gameOverFlag = true;
+      cancelAnimationFrame(animationFrame);
+
+      if (score > highScore) {
+        highScore = score;
+        highScoreEl.textContent = highScore;
+      }
+
+      gameOverText.innerHTML = `
+        💥 게임 오버!<br>
+        회피한 장애물: ${score}개<br>
+        이동 거리: ${distance}px
+      `;
+      gameOverScreen.style.display = 'block';
+    }
+
+    function resetGame() {
+      gameOverFlag = false;
+      gameOverScreen.style.display = 'none';
+      player.y = floorY - grid * 2;
+      player.height = grid * 2;
+      player.dy = 0;
+      player.jumpCount = 0;
+      player.isCrouch = false;
+      player.isJumping = false;
+      obstacles = [];
+      score = 0;
+      distance = 0;
+      frame = 0;
+      scoreEl.textContent = score;
+      distanceEl.textContent = distance;
+      highScoreEl.textContent = highScore;
+      gameLoop();
+    }
+
+    function gameLoop() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      ctx.fillStyle = '#666';
+      ctx.fillRect(0, floorY, canvas.width, grid); // 바닥
+
+      for (let i = obstacles.length - 1; i >= 0; i--) {
+        const obs = obstacles[i];
+        obs.update();
+        obs.draw();
+
+        if (!obs.passed && obs.x + obs.width < player.x) {
+          obs.passed = true;
+          score++;
+        }
+
+        if (handleCollision(obs)) {
+          gameOver();
+          return;
+        }
+
+        if (obs.x + obs.width < 0) {
+          obstacles.splice(i, 1);
+        }
+      }
+
+      player.dy += player.gravity;
+      player.y += player.dy;
+
+      if (player.dy < player.maxJumpHeight) {
+        player.dy = player.maxJumpHeight;
+      }
+
+      if (player.y >= floorY - player.height) {
+        player.y = floorY - player.height;
+        player.dy = 0;
+        player.jumpCount = 0;
+        player.isJumping = false;
+      }
+
+      ctx.fillStyle = 'lime';
+      ctx.fillRect(player.x, player.y, player.width, player.height);
+
+      frame++;
+      if (frame % 60 === 0) createObstacle();
+      distance += 6;
+      scoreEl.textContent = score;
+      distanceEl.textContent = distance;
+
+      if (!gameOverFlag) {
+        animationFrame = requestAnimationFrame(gameLoop);
+      }
+    }
+
+    // 키보드 이벤트
+    document.addEventListener('keydown', (e) => {
+      if (e.code === 'ArrowUp' || e.code === 'Space') jump();
+      if (e.code === 'ArrowDown') crouch(true);
+    });
+
+    document.addEventListener('keyup', (e) => {
+      if (e.code === 'ArrowDown') crouch(false);
+    });
+
+    // 모바일 터치 이벤트 추가
+    let touchDown = false;
+
+    canvas.addEventListener('touchstart', (e) => {
+      e.preventDefault();
+      if (!touchDown) {
+        jump();
+        touchDown = true;
+        crouch(true);
+      }
+    });
+
+    canvas.addEventListener('touchend', (e) => {
+      e.preventDefault();
+      crouch(false);
+      touchDown = false;
+    });
+
+    canvas.addEventListener('touchcancel', (e) => {
+      e.preventDefault();
+      crouch(false);
+      touchDown = false;
+    });
+
+    resetGame();
+  </script>
+</body>
+</html>
